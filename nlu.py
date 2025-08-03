@@ -47,7 +47,7 @@ def extract_json_from_gemini(raw_response: str):
             raise ValueError("No JSON found.")
         return json.loads(match.group(1))
     except Exception as e:
-        print("❌ Failed to extract JSON:", e)
+        print("Failed to extract JSON:", e)
         return {"error": "Gemini response was not valid JSON", "raw": raw_response}
 
 # === GEMINI FIELD EXTRACTOR ===
@@ -68,7 +68,7 @@ Text:
     try:
         response = model.generate_content(prompt)
         content = response.text
-        print("🔍 Gemini Response:\n", content)
+        print("Gemini Response:\n", content)
         return extract_json_from_gemini(content)
     except Exception as e:
         return {"error": str(e), "raw": text}
@@ -98,7 +98,7 @@ def validate_claim(fields: dict) -> dict:
 # === ROUTES ===
 @app.get("/")
 def read_root():
-    return {"message": "✅ Claims Processing API (Gemini + Vision OCR) is live!"}
+    return {"message": "Claims Processing API (Gemini + Vision OCR) is live!"}
 
 @app.post("/parse_claim")
 async def parse_claim(data: ClaimTextInput):
