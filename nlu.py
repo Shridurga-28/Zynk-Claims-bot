@@ -1,133 +1,113 @@
-import os
-import json
-import io
-import re
-import uvicorn
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
-from typing import Optional
-from PIL import Image
+import os, json, re
 from dotenv import load_dotenv
-
 from google.cloud import vision
 from google.oauth2 import service_account
-
 from vertexai import init
 from vertexai.preview.generative_models import GenerativeModel
 
 # === ENV SETUP ===
 load_dotenv()
-
-# === GOOGLE CLOUD PROJECT ===
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = "us-central1"
 init(project=PROJECT_ID, location=REGION)
 
-# === GEMINI MODEL ===
 model = GenerativeModel("gemini-2.5-pro")
-
-# === FASTAPI INIT ===
 app = FastAPI()
 
-# === GOOGLE VISION CLIENT ===
 creds = service_account.Credentials.from_service_account_file("service_account.json")
 vision_client = vision.ImageAnnotatorClient(credentials=creds)
 
-# === SCHEMA ===
 class ClaimTextInput(BaseModel):
     ocr_text: str
 
-# === UTILS: Extract JSON from Gemini output ===
 def extract_json_from_gemini(raw_response: str):
     try:
         match = re.search(r"```json\s*(\{.*?\})\s*```", raw_response, re.DOTALL)
         if not match:
             match = re.search(r"(\{.*\})", raw_response, re.DOTALL)
-        if not match:
-            raise ValueError("No JSON found.")
-        return json.loads(match.group(1))
-    except Exception as e:
-        print("Failed to extract JSON:", e)
-        return {"error": "Gemini response was not valid JSON", "raw": raw_response}
+        return json.loads(match.group(1)) if match else {}
+    except:
+        return {}
 
-# === GEMINI FIELD EXTRACTOR ===
 def gpt_extract_fields_from_text(text: str) -> dict:
     prompt = f"""
-You are an insurance claims AI. Extract the following fields from this invoice text and return JSON:
-
+You are an insurance claims assistant. Extract these fields as JSON:
 - name
-- policy_number (optional)
+- policy_number
 - hospital or pharmacy name
 - invoice date
-- total_claim_amount (as number)
+- total_claim_amount
 - itemized_list: name, quantity, unit_price, total
 
 Text:
 {text}
 """
-    try:
-        response = model.generate_content(prompt)
-        content = response.text
-        print("Gemini Response:\n", content)
-        return extract_json_from_gemini(content)
-    except Exception as e:
-        return {"error": str(e), "raw": text}
+    response = model.generate_content(prompt)
+    return extract_json_from_gemini(response.text)
 
-# === CLAIM VALIDATION ===
-def validate_claim(fields: dict) -> dict:
+def validate_claim(fields: dict) -> (bool, list):
     errors = []
-
-    if "total_claim_amount" in fields:
-        try:
-            amount = float(fields["total_claim_amount"])
-            if amount > 50000:
-                errors.append("Claim amount exceeds ₹50,000.")
-        except:
-            errors.append("Invalid total_claim_amount value.")
-
-    if "admit_date" in fields and "discharge_date" in fields:
-        if fields["admit_date"] > fields["discharge_date"]:
-            errors.append("Admit date is after discharge date.")
-
-    return {
-        "is_valid": len(errors) == 0,
-        "errors": errors,
-        "fields": fields
-    }
-
-# === ROUTES ===
-@app.get("/")
-def read_root():
-    return {"message": "Claims Processing API (Gemini + Vision OCR) is live!"}
-
-@app.post("/parse_claim")
-async def parse_claim(data: ClaimTextInput):
-    fields = gpt_extract_fields_from_text(data.ocr_text)
-    result = validate_claim(fields)
-    return result
-
-@app.post("/upload_claim_image")
-async def upload_claim_image(file: UploadFile = File(...)):
     try:
-        image_bytes = await file.read()
-        image = vision.Image(content=image_bytes)
-        response = vision_client.text_detection(image=image)
+        amount = float(fields.get("total_claim_amount", 0))
+        if amount > 50000:
+            errors.append("Claim amount exceeds ₹50,000.")
+    except:
+        errors.append("Invalid amount format.")
+    return len(errors) == 0, errors
 
-        ocr_text = response.text_annotations[0].description if response.text_annotations else ""
+def generate_chat_response(fields: dict, is_valid: bool, errors: list) -> str:
+    if not fields:
+        return "I couldn’t extract details from the document. Please upload a clearer image or try again."
 
-        fields = gpt_extract_fields_from_text(ocr_text)
-        result = validate_claim(fields)
+    lines = []
+    if is_valid:
+        lines.append("Thanks! I’ve reviewed your claim. Here’s what I found:")
+    else:
+        lines.append("I noticed some issues with your claim:")
+        for e in errors:
+            lines.append(f"- {e}")
+        lines.append("Still, here’s what I could extract:")
 
-        return {
-            "ocr_text": ocr_text,
-            **result
-        }
+    if fields.get("name"):
+        lines.append(f"The claim is under the name {fields['name']}.")
+    if fields.get("policy_number"):
+        lines[-1] += f" Policy number is {fields['policy_number']}."
+    if fields.get("hospital") or fields.get("invoice_date"):
+        line = "It was issued"
+        if fields.get("hospital"):
+            line += f" by {fields['hospital']}"
+        if fields.get("invoice_date"):
+            line += f" on {fields['invoice_date']}"
+        line += "."
+        lines.append(line)
+    if fields.get("total_claim_amount"):
+        lines.append(f"Total amount claimed is ₹{fields['total_claim_amount']}.")
 
-    except Exception as e:
-        return {"error": str(e)}
+    if fields.get("itemized_list"):
+        lines.append("Here’s a breakdown of the charges:")
+        for i, item in enumerate(fields["itemized_list"], 1):
+            lines.append(f"{i}. {item['name']} — {item['quantity']} at ₹{item['unit_price']} each, total ₹{item['total']}")
 
-# === RUN APP LOCALLY ===
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    lines.append("Let me know if you'd like to proceed with submission or corrections.")
+    return "\n".join(lines)
+
+@app.post("/chat_parse_claim")
+async def chat_parse_claim(data: ClaimTextInput):
+    fields = gpt_extract_fields_from_text(data.ocr_text)
+    is_valid, errors = validate_claim(fields)
+    response = generate_chat_response(fields, is_valid, errors)
+    return {"response": response}
+
+@app.post("/chat_upload_claim_image")
+async def chat_upload_claim_image(file: UploadFile = File(...)):
+    image_bytes = await file.read()
+    image = vision.Image(content=image_bytes)
+    response = vision_client.text_detection(image=image)
+    ocr_text = response.text_annotations[0].description if response.text_annotations else ""
+
+    fields = gpt_extract_fields_from_text(ocr_text)
+    is_valid, errors = validate_claim(fields)
+    response = generate_chat_response(fields, is_valid, errors)
+    return {"response": response}
