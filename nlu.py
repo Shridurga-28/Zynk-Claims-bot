@@ -2,18 +2,20 @@ import os
 import json
 import io
 import re
+import uvicorn
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
 from PIL import Image
-import pytesseract
 from dotenv import load_dotenv
+
+from google.cloud import vision
+from google.oauth2 import service_account
 
 from vertexai import init
 from vertexai.preview.generative_models import GenerativeModel
 
-# === ENV & TESSERACT SETUP ===
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# === ENV SETUP ===
 load_dotenv()
 
 # === GOOGLE CLOUD PROJECT ===
@@ -21,17 +23,21 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = "us-central1"
 init(project=PROJECT_ID, location=REGION)
 
-# === MODEL ===
+# === GEMINI MODEL ===
 model = GenerativeModel("gemini-2.5-pro")
 
-# === FASTAPI ===
+# === FASTAPI INIT ===
 app = FastAPI()
+
+# === GOOGLE VISION CLIENT ===
+creds = service_account.Credentials.from_service_account_file("service_account.json")
+vision_client = vision.ImageAnnotatorClient(credentials=creds)
 
 # === SCHEMA ===
 class ClaimTextInput(BaseModel):
     ocr_text: str
 
-# === UTILS: EXTRACT JSON FROM GEMINI RESPONSE ===
+# === UTILS: Extract JSON from Gemini output ===
 def extract_json_from_gemini(raw_response: str):
     try:
         match = re.search(r"```json\s*(\{.*?\})\s*```", raw_response, re.DOTALL)
@@ -44,7 +50,7 @@ def extract_json_from_gemini(raw_response: str):
         print("❌ Failed to extract JSON:", e)
         return {"error": "Gemini response was not valid JSON", "raw": raw_response}
 
-# === GEMINI FIELD EXTRACTION ===
+# === GEMINI FIELD EXTRACTOR ===
 def gpt_extract_fields_from_text(text: str) -> dict:
     prompt = f"""
 You are an insurance claims AI. Extract the following fields from this invoice text and return JSON:
@@ -59,13 +65,11 @@ You are an insurance claims AI. Extract the following fields from this invoice t
 Text:
 {text}
 """
-
     try:
         response = model.generate_content(prompt)
         content = response.text
-        print("🔍 Gemini Response:\n", content)  # Debug log
+        print("🔍 Gemini Response:\n", content)
         return extract_json_from_gemini(content)
-
     except Exception as e:
         return {"error": str(e), "raw": text}
 
@@ -94,7 +98,7 @@ def validate_claim(fields: dict) -> dict:
 # === ROUTES ===
 @app.get("/")
 def read_root():
-    return {"message": "✅ Claims Processing API (Gemini) is live!"}
+    return {"message": "✅ Claims Processing API (Gemini + Vision OCR) is live!"}
 
 @app.post("/parse_claim")
 async def parse_claim(data: ClaimTextInput):
@@ -106,8 +110,10 @@ async def parse_claim(data: ClaimTextInput):
 async def upload_claim_image(file: UploadFile = File(...)):
     try:
         image_bytes = await file.read()
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        ocr_text = pytesseract.image_to_string(image)
+        image = vision.Image(content=image_bytes)
+        response = vision_client.text_detection(image=image)
+
+        ocr_text = response.text_annotations[0].description if response.text_annotations else ""
 
         fields = gpt_extract_fields_from_text(ocr_text)
         result = validate_claim(fields)
@@ -119,9 +125,9 @@ async def upload_claim_image(file: UploadFile = File(...)):
 
     except Exception as e:
         return {"error": str(e)}
-    
+
+# === RUN APP LOCALLY ===
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
-
