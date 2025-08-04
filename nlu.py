@@ -1,104 +1,86 @@
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
-import os, json, re
-from dotenv import load_dotenv
-from google.cloud import vision
-from google.oauth2 import service_account
 from vertexai import init
 from vertexai.preview.generative_models import GenerativeModel
+from google.cloud import vision
+import os, re
+from dotenv import load_dotenv
 
 # === ENV SETUP ===
 load_dotenv()
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-REGION = "us-central1"
-init(project=PROJECT_ID, location=REGION)
+REGION = os.getenv("REGION", "us-central1")
 
+# Initialize Vertex AI and Gemini
+init(project=PROJECT_ID, location=REGION)
 model = GenerativeModel("gemini-2.5-pro")
+
+# Google Cloud Vision client
+vision_client = vision.ImageAnnotatorClient()
+
+# FastAPI app
 app = FastAPI()
 
-creds = service_account.Credentials.from_service_account_file("service_account.json")
-vision_client = vision.ImageAnnotatorClient(credentials=creds)
-
+# === SCHEMA ===
 class ClaimTextInput(BaseModel):
     ocr_text: str
 
-def extract_json_from_gemini(raw_response: str):
-    try:
-        match = re.search(r"```json\s*(\{.*?\})\s*```", raw_response, re.DOTALL)
-        if not match:
-            match = re.search(r"(\{.*\})", raw_response, re.DOTALL)
-        return json.loads(match.group(1)) if match else {}
-    except:
-        return {}
+# === UTILS ===
+def gpt_generate_chat_from_text(text: str) -> str:
+    """
+    Sends OCR text to Gemini and returns a conversational, Markdown-formatted summary.
+    """
+    prompt = (
+        "You are an insurance claims assistant. The following is OCR text from a claim invoice.\n\n"
+        "Your task:\n"
+        "1. Create a friendly summary in Markdown format.\n"
+        "2. Always include these sections, even if the data is missing (write 'Not provided' if missing):\n"
+        "   - Claimant Name\n"
+        "   - Policy Number\n"
+        "   - Hospital/Pharmacy Name\n"
+        "   - Invoice Date\n"
+        "   - Total Claim Amount\n"
+        "3. Provide an itemized breakdown with each item's name, quantity, and unit price if available.\n"
+        "4. End with a friendly closing line.\n\n"
+        "Example output:\n"
+        "Hi there! Here’s a quick summary of your claim:\n\n"
+        "**Claim Details:**\n"
+        "- Claimant Name: John Doe\n"
+        "- Policy Number: Not provided\n"
+        "- Pharmacy Name: ABC Pharmacy\n"
+        "- Invoice Date: 15-Jan-2025\n"
+        "- Total Claim Amount: ₹1,250.00\n\n"
+        "**Items Purchased:**\n"
+        "1. Paracetamol 500 mg — 10 tablets @ ₹5.00 each\n"
+        "2. Cough Syrup (200ml) — 2 bottles @ ₹90.00 each\n\n"
+        "Everything looks clear. Let me know if you have any questions!\n\n"
+        f"Invoice text:\n{text}"
+    )
 
-def gpt_extract_fields_from_text(text: str) -> dict:
-    prompt = f"""
-You are an insurance claims assistant. Extract these fields as JSON:
-- name
-- policy_number
-- hospital or pharmacy name
-- invoice date
-- total_claim_amount
-- itemized_list: name, quantity, unit_price, total
-
-Text:
-{text}
-"""
     response = model.generate_content(prompt)
-    return extract_json_from_gemini(response.text)
+    print("🔍 RAW GEMINI CHAT OUTPUT:\n", response.text)
+    return response.text.strip()
 
-def validate_claim(fields: dict) -> (bool, list):
-    errors = []
-    try:
-        amount = float(fields.get("total_claim_amount", 0))
-        if amount > 50000:
-            errors.append("Claim amount exceeds ₹50,000.")
-    except:
-        errors.append("Invalid amount format.")
-    return len(errors) == 0, errors
+def validate_claim_in_text(chat_response: str) -> str:
+    """
+    Checks the claim amount in the chat response and appends a warning if above ₹50,000.
+    """
+    match = re.search(r"₹([\d,]+\.\d{2})", chat_response)
+    if match:
+        try:
+            amount = float(match.group(1).replace(",", ""))
+            if amount > 100000:
+                chat_response += "\n\n **Note:** This claim amount exceeds the ₹1,00,000 limit."
+        except:
+            pass
+    return chat_response
 
-def generate_chat_response(fields: dict, is_valid: bool, errors: list) -> str:
-    if not fields:
-        return "I couldn’t extract details from the document. Please upload a clearer image or try again."
-
-    lines = []
-    if is_valid:
-        lines.append("Thanks! I’ve reviewed your claim. Here’s what I found:")
-    else:
-        lines.append("I noticed some issues with your claim:")
-        for e in errors:
-            lines.append(f"- {e}")
-        lines.append("Still, here’s what I could extract:")
-
-    if fields.get("name"):
-        lines.append(f"The claim is under the name {fields['name']}.")
-    if fields.get("policy_number"):
-        lines[-1] += f" Policy number is {fields['policy_number']}."
-    if fields.get("hospital") or fields.get("invoice_date"):
-        line = "It was issued"
-        if fields.get("hospital"):
-            line += f" by {fields['hospital']}"
-        if fields.get("invoice_date"):
-            line += f" on {fields['invoice_date']}"
-        line += "."
-        lines.append(line)
-    if fields.get("total_claim_amount"):
-        lines.append(f"Total amount claimed is ₹{fields['total_claim_amount']}.")
-
-    if fields.get("itemized_list"):
-        lines.append("Here’s a breakdown of the charges:")
-        for i, item in enumerate(fields["itemized_list"], 1):
-            lines.append(f"{i}. {item['name']} — {item['quantity']} at ₹{item['unit_price']} each, total ₹{item['total']}")
-
-    lines.append("Let me know if you'd like to proceed with submission or corrections.")
-    return "\n".join(lines)
-
+# === ENDPOINTS ===
 @app.post("/chat_parse_claim")
 async def chat_parse_claim(data: ClaimTextInput):
-    fields = gpt_extract_fields_from_text(data.ocr_text)
-    is_valid, errors = validate_claim(fields)
-    response = generate_chat_response(fields, is_valid, errors)
-    return {"response": response}
+    chat_response = gpt_generate_chat_from_text(data.ocr_text)
+    chat_response = validate_claim_in_text(chat_response)
+    return {"response": chat_response}
 
 @app.post("/chat_upload_claim_image")
 async def chat_upload_claim_image(file: UploadFile = File(...)):
@@ -107,7 +89,16 @@ async def chat_upload_claim_image(file: UploadFile = File(...)):
     response = vision_client.text_detection(image=image)
     ocr_text = response.text_annotations[0].description if response.text_annotations else ""
 
-    fields = gpt_extract_fields_from_text(ocr_text)
-    is_valid, errors = validate_claim(fields)
-    response = generate_chat_response(fields, is_valid, errors)
-    return {"response": response}
+    if not ocr_text.strip():
+        return {
+            "response": "Hmm... I couldn't read any text from this image. Please upload a clearer image or try again."
+        }
+
+    chat_response = gpt_generate_chat_from_text(ocr_text)
+    chat_response = validate_claim_in_text(chat_response)
+    return {"response": chat_response}
+
+# Root endpoint
+@app.get("/")
+def root():
+    return {"message": "Claims Processing Chat API is live!"}
