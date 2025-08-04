@@ -58,7 +58,7 @@ def gpt_generate_chat_from_text(text: str) -> str:
     )
 
     response = model.generate_content(prompt)
-    print("🔍 RAW GEMINI CHAT OUTPUT:\n", response.text)
+    print("GEMINI CHAT OUTPUT:\n", response.text)
     return response.text.strip()
 
 def validate_claim_in_text(chat_response: str) -> str:
