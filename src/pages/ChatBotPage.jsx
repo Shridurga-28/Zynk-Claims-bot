@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import '../App.css';
 
+const API_BASE = "http://localhost:8000"; // Or your backend URL
+
 const ChatBotPage = () => {
   const [chat, setChat] = useState('');
   const [messages, setMessages] = useState([]);
@@ -20,22 +22,28 @@ const ChatBotPage = () => {
     }
   }, []);
 
-  const handleSend = () => {
-    if (chat.trim()) {
-      setMessages(prev => [...prev, { sender: 'user', text: chat }]);
-      setChat('');
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          { sender: 'bot', text: '🤖 Let me help you with that...' }
-        ]);
-      }, 800);
-    }
-  };
+  const handleSend = async () => {
+  if (!chat.trim()) return;
+
+  setMessages((prev) => [...prev, { sender: "user", text: chat }]);
+
+  const res = await fetch(`${API_BASE}/chat_parse_claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ocr_text: chat }),
+  });
+
+  const data = await res.json();
+  setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
+  setChat('');
+};
 
   const handleVoice = () => {
-    recognitionRef.current?.start();
-    setRecognitionActive(true);
+    if (recognitionRef.current){
+      recognitionRef.current.start();
+      setRecognitionActive(true);
+      recognitionRef.current.onend = () => setRecognitionActive(false);
+    }
   };
 
   return (

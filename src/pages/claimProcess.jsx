@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import '../App.css';
 
+const API_BASE = "http://localhost:8000"; // Or your backend URL
+
 const FAQs = [
   { q: "How long does a claim take?", a: "It typically takes 3–5 working days after verification." },
   { q: "What documents are needed?", a: "You’ll need ID proof, policy copy, and supporting documents like bills or reports." },
@@ -51,15 +53,22 @@ function App() {
     setImagePreview(null);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setFile(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleFileChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/chat_upload_claim_image`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+  setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
+};
+
 
   const handleSend = () => {
     if (chat.trim()) {

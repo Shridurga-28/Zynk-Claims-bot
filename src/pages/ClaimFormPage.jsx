@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import '../App.css';
 
+const API_BASE = "http://localhost:8000"; // Or your backend URL
+
 const ClaimFormPage = () => {
+  const [messages, setMessages] = useState([]);
   const [form, setForm] = useState({ name: '', email: '', policy: '', description: '' });
   const [success, setSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
@@ -15,14 +18,22 @@ const ClaimFormPage = () => {
     setImagePreview(null);
   };
 
-  const handleFile = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleFile = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/chat_upload_claim_image`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+  setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
+};
+
 
   return (
     <motion.div
