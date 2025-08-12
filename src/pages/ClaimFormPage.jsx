@@ -9,6 +9,7 @@ const ClaimFormPage = () => {
   const [form, setForm] = useState({ name: '', email: '', policy: '', description: '' });
   const [success, setSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [result, setResult] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,6 +33,7 @@ const ClaimFormPage = () => {
 
   const data = await res.json();
   setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
+  setResult(data.response);
 };
 
 
@@ -69,6 +71,14 @@ const ClaimFormPage = () => {
           <button type="submit">Submit</button>
           {success && <p className="success">✅ Claim submitted!</p>}
         </form>
+
+        {result && (
+  <div className="claim-result">
+    <h3>📝 Claim Summary</h3>
+    <pre>{result}</pre>
+  </div>
+)}
+
       </motion.div>
     </motion.div>
   );
