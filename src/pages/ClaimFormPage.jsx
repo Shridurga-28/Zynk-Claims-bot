@@ -26,14 +26,14 @@ const ClaimFormPage = () => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/chat_upload_claim_image`, {
-    method: "POST",
-    body: formData,
-  });
+  const res = await fetch(`${API_BASE}/store_claim_image?user_id=demo-user`, {
+  method: "POST",
+  body: formData,
+});
+const data = await res.json();
+setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
+setResult(data.reply);
 
-  const data = await res.json();
-  setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
-  setResult(data.response);
 };
 
 

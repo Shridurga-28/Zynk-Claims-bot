@@ -27,14 +27,17 @@ const ChatBotPage = () => {
 
   setMessages((prev) => [...prev, { sender: "user", text: chat }]);
 
-  const res = await fetch(`${API_BASE}/chat_parse_claim`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ocr_text: chat }),
-  });
+  const res = await fetch(`${API_BASE}/chat_query`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    user_id: "demo-user",
+    question: chat
+  }),
+});
+const data = await res.json();
+setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
 
-  const data = await res.json();
-  setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
   setChat('');
 };
 

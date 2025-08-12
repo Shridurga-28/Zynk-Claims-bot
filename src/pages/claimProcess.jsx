@@ -60,13 +60,17 @@ function App() {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/chat_upload_claim_image`, {
-    method: "POST",
-    body: formData,
-  });
+  const res = await fetch(`${API_BASE}/chat_query`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    user_id: "demo-user",
+    question: chat
+  }),
+});
+const data = await res.json();
+setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
 
-  const data = await res.json();
-  setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
 };
 
 
