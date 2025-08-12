@@ -1,9 +1,0 @@
-pydantic
-vertexai
-python-multipart
-fastapi
-uvicorn
-pillow
-python-dotenv
-google-cloud-vision
-google-cloud-aiplatform
