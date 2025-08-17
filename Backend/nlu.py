@@ -40,21 +40,21 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 #     json.dump(cred_dict, f)
 #     temp_path = f.name
 
-if not PROJECT_ID:
-    raise RuntimeError("GCP_PROJECT_ID env var is required")
+# if not PROJECT_ID:
+#     raise RuntimeError("GCP_PROJECT_ID env var is required")
 
-# Vertex AI (Gemini)
-init(project=PROJECT_ID, location=REGION)
-model = GenerativeModel("gemini-2.0-flash") #("gemini-2.5-pro")
+# # Vertex AI (Gemini)
+# init(project=PROJECT_ID, location=REGION)
+# model = GenerativeModel("gemini-2.0-flash") #("gemini-2.5-pro")
 
-#Firebase Admin (use service account if provided, else ADC)
-if not firebase_admin._apps:
-    if SA_PATH and os.path.exists(SA_PATH):
-        cred = credentials.Certificate(SA_PATH)
-        firebase_admin.initialize_app(cred)
-    else:
-        firebase_admin.initialize_app()
-db = firestore.client()
+# # Firebase Admin (use service account if provided, else ADC)
+# # if not firebase_admin._apps:
+# #     if temp_path and os.path.exists(temp_path):
+# #         cred = credentials.Certificate(temp_path)
+# #         firebase_admin.initialize_app(cred)
+# #     else:
+# #         firebase_admin.initialize_app()
+# # db = firestore.client()
 
 # temp_path = None
 # if SA_PATH:
@@ -72,6 +72,30 @@ db = firestore.client()
 #         firebase_admin.initialize_app()
 
 # db = firestore.client()
+
+
+
+# Vertex AI
+if not PROJECT_ID:
+    raise RuntimeError("GCP_PROJECT_ID env var is required")
+init(project=PROJECT_ID, location=REGION)
+model = GenerativeModel("gemini-2.0-flash")
+
+# Firebase Admin
+sa_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+if not sa_json:
+    raise RuntimeError("GOOGLE_APPLICATION_CREDENTIALS env var not set")
+
+# Write env var JSON to temp file
+with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
+    f.write(sa_json)
+    temp_path = f.name
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(temp_path)
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
 
 # Vision client (ADC or SA via GOOGLE_APPLICATION_CREDENTIALS)
 vision_client = vision.ImageAnnotatorClient()
