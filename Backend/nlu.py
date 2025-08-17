@@ -28,7 +28,8 @@ load_dotenv()
 
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = os.getenv("REGION", "us-central1")
-SA_PATH = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") #os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "service_account.json")
+#SA_PATH = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") 
+SA_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "service_account.json")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 # Convert JSON string to dict
@@ -46,31 +47,31 @@ if not PROJECT_ID:
 init(project=PROJECT_ID, location=REGION)
 model = GenerativeModel("gemini-2.0-flash") #("gemini-2.5-pro")
 
-# Firebase Admin (use service account if provided, else ADC)
-# if not firebase_admin._apps:
-#     if temp_path and os.path.exists(temp_path):
-#         cred = credentials.Certificate(temp_path)
-#         firebase_admin.initialize_app(cred)
-#     else:
-#         firebase_admin.initialize_app()
-# db = firestore.client()
-
-temp_path = None
-if SA_PATH:
-    # Convert JSON string to dict and write to a temp file
-    cred_dict = json.loads(SA_PATH)
-    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
-        json.dump(cred_dict, f)
-        temp_path = f.name
-
+#Firebase Admin (use service account if provided, else ADC)
 if not firebase_admin._apps:
-    if temp_path and os.path.exists(temp_path):
-        cred = credentials.Certificate(temp_path)  # pass temp file path
+    if SA_PATH and os.path.exists(SA_PATH):
+        cred = credentials.Certificate(SA_PATH)
         firebase_admin.initialize_app(cred)
     else:
         firebase_admin.initialize_app()
-
 db = firestore.client()
+
+# temp_path = None
+# if SA_PATH:
+#     # Convert JSON string to dict and write to a temp file
+#     cred_dict = json.loads(SA_PATH)
+#     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
+#         json.dump(cred_dict, f)
+#         temp_path = f.name
+
+# if not firebase_admin._apps:
+#     if temp_path and os.path.exists(temp_path):
+#         cred = credentials.Certificate(temp_path)  # pass temp file path
+#         firebase_admin.initialize_app(cred)
+#     else:
+#         firebase_admin.initialize_app()
+
+# db = firestore.client()
 
 # Vision client (ADC or SA via GOOGLE_APPLICATION_CREDENTIALS)
 vision_client = vision.ImageAnnotatorClient()

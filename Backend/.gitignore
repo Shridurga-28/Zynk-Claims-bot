@@ -26,4 +26,3 @@ __pycache__/
 *.log
 .vscode/
 .venv/
-service_account.json
