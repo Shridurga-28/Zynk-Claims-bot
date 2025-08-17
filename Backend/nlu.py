@@ -76,23 +76,14 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 
 # Vertex AI
-if not PROJECT_ID:
-    raise RuntimeError("GCP_PROJECT_ID env var is required")
 init(project=PROJECT_ID, location=REGION)
 model = GenerativeModel("gemini-2.0-flash")
 
-# Firebase Admin
-sa_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-if not sa_json:
-    raise RuntimeError("GOOGLE_APPLICATION_CREDENTIALS env var not set")
-
-# Write env var JSON to temp file
-with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
-    f.write(sa_json)
-    temp_path = f.name
+# Firebase Admin using secret file
+sa_path = "/run/secrets/service_account.json"
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(temp_path)
+    cred = credentials.Certificate(sa_path)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
