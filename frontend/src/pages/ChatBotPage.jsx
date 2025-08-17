@@ -297,6 +297,7 @@ const ChatBotPage = () => {
           <button onClick={handleVoice} disabled={recognitionActive}>
             🎤 {recognitionActive ? 'Listening...' : 'Speak'}
           </button>
+          <p> The Intial messages query takes time to load. Please wait....</p>
         </div>
       </motion.div>
 
