@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import '../App.css';
 
-const API_BASE = "http://localhost:8000"; // Or your backend URL
+const API_BASE = "/api"; //"http://localhost:8000"; // Or your backend URL
 
 const ClaimFormPage = () => {
   const [messages, setMessages] = useState([]);
@@ -67,7 +67,7 @@ setResult(data.reply);
               transition={{ duration: 0.4 }}
             />
           )}
-          <p className="ocr-placeholder">🧠 OCR will parse this image after submission</p>
+          <p className="ocr-placeholder">OCR will parse this image after submission</p>
           <button type="submit">Submit</button>
           {success && <p className="success">✅ Claim submitted!</p>}
         </form>

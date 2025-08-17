@@ -24,7 +24,7 @@ const FAQPage = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="glow-title">❓ Ask Mari - Your FAQ Assistant</h2>
+        <h2 className="glow-title">Ask Zynk - Your FAQ Assistant</h2>
         {FAQs.map((faq, i) => (
           <motion.div
             className="faq-item"
@@ -40,7 +40,7 @@ const FAQPage = () => {
                 animate={{ opacity: 1, y: 0 }}
               >
                 <p>{faq.a}</p>
-                <div className="mari-comment">🤖 Mari says: <i>{faq.m}</i></div>
+                <div className="mari-comment">Zynk says: <i>{faq.m}</i></div>
               </motion.div>
             )}
           </motion.div>

@@ -6,6 +6,7 @@ body {
   background: linear-gradient(to right, #eef2f3, #8e9eab);
   background-attachment: fixed;
   color: #333;
+  overflow: hidden;
 }
 
 a {
@@ -25,7 +26,7 @@ button {
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #52a6ff;
 }
 
 h1, h2 {
@@ -53,11 +54,11 @@ h1, h2 {
 .nav-buttons button {
   width: 100%;
   font-size: 1.1rem;
-  background-color: #28a745;
+  background: #4128a7;
 }
 
 .nav-buttons button:hover {
-  background-color: #1e7e34;
+  background: #674cd1;
 }
 
 /* === ChatBot === */
@@ -71,7 +72,7 @@ h1, h2 {
 }
 
 .chat-box {
-  background-color: #f7f7f7;
+  background: #ff9595;
   border: 1px solid #ccc;
   border-radius: 10px;
   height: 250px;
@@ -90,15 +91,15 @@ h1, h2 {
 }
 
 .msg.user {
-  background-color: #007bff;
+  background-color: #C63C51;
   color: white;
   float: right;
   clear: both;
 }
 
 .msg.bot {
-  background-color: #e2e2e2;
-  color: black;
+  background-color: #522258;
+  color:white;
   float: left;
   clear: both;
 }
@@ -191,7 +192,7 @@ h1, h2 {
 }
 
 .chatbot-bg {
-  background-image: url('https://images.pexels.com/photos/2680270/pexels-photo-2680270.jpeg');
+  background:linear-gradient(to right,#522258,#8C3061,#C63C51,#D95F59);;
   background-size: cover;
   background-position: center;
   min-height: 100vh;
@@ -293,7 +294,7 @@ h1, h2 {
 }
 
 .chatbot-bg {
-  background-image: url('https://images.pexels.com/photos/2680270/pexels-photo-2680270.jpeg');
+  background: linear-gradient(to right,#522258,#8C3061,#C63C51,#D95F59);
   background-size: cover;
   background-position: center;
   min-height: 100vh;
@@ -307,13 +308,23 @@ h1, h2 {
 }
 
 .chat-container {
-  width: 100%;
+  /* width: 100%;
   max-width: 600px;
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  margin-bottom: 2rem; */
+  width: 100%;
+  max-width: 600px;
+  background: rgba(255, 255, 255, 0.15); /* semi-transparent */
+  backdrop-filter: blur(12px); /* glass blur effect */
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   margin-bottom: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .glow-title {
@@ -337,6 +348,7 @@ h1, h2 {
   height: 260px;
   overflow-y: auto;
   background-color: #f4f4f4;
+  border:1px solid black;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -352,7 +364,7 @@ h1, h2 {
 }
 
 .msg.user {
-  background-color: #007bff;
+  background-color: #C63C51;
   color: white;
   align-self: flex-end;
   float: right;
@@ -360,8 +372,8 @@ h1, h2 {
 }
 
 .msg.bot {
-  background-color: #e9ecef;
-  color: #333;
+  background-color:#522258;
+  color: white;
   float: left;
   clear: both;
 }
@@ -375,14 +387,14 @@ h1, h2 {
   flex: 1;
   padding: 0.7rem;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid black;
 }
 
 .chat-input button {
   padding: 0.6rem 1rem;
   border-radius: 8px;
-  border: none;
-  background-color: #28a745;
+  border:1px solid black;
+  background: #522258;
   color: white;
 }
 
@@ -410,9 +422,9 @@ h1, h2 {
 }
 
 .bottom-options button {
-  background-color: rgba(255,255,255,0.85);
+  background:#8C3061;
   border-radius: 8px;
-  border: none;
+  border:1px solid white;
   padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -435,7 +447,8 @@ h1, h2 {
 }
 /* FULLSCREEN HOME PAGE WITH BACKGROUND */
 .home-bg-image {
-  background: url('https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg') no-repeat center center fixed;
+  background: linear-gradient(to right,#522258,#8C3061,#C63C51,#D95F59);
+  overflow: hidden;
   background-size: cover;
   min-height: 100vh;
   padding: 2rem;
@@ -484,7 +497,7 @@ h1, h2 {
   font-size: 1rem;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(to right, #007bff, #00c6ff);
+  background: linear-gradient(to left,#522258,#8C3061,#C63C51,#D95F59);
   color: white;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -497,7 +510,7 @@ h1, h2 {
 }
 /* === CLAIM FORM PAGE WITH BACKGROUND === */
 .claim-bg {
-  background: url('https://images.pexels.com/photos/733857/pexels-photo-733857.jpeg') no-repeat center center fixed;
+  background:linear-gradient(to right, #522258,#8C3061,#C63C51,#D95F59);
   background-size: cover;
   min-height: 100vh;
   display: flex;
@@ -541,7 +554,7 @@ h1, h2 {
 }
 
 .claim-form-glass button {
-  background-color: #007bff;
+  background:linear-gradient(to left,#522258,#8C3061,#C63C51,#D95F59);
   padding: 0.7rem 1.5rem;
   border-radius: 8px;
   color: white;
@@ -553,7 +566,7 @@ h1, h2 {
 }
 
 .claim-form-glass button:hover {
-  background-color: #0056b3;
+  background: #410648;
 }
 
 .image-preview {
@@ -582,7 +595,7 @@ h1, h2 {
   }
 }
 .faq-bg {
-  background: url('https://images.pexels.com/photos/62693/pexels-photo-62693.jpeg') no-repeat center center fixed;
+  background:linear-gradient(to right,#522258,#8C3061,#C63C51,#D95F59);
   background-size: cover;
   min-height: 100vh;
   padding: 2rem;
@@ -611,7 +624,7 @@ h1, h2 {
   width: 100%;
   font-size: 1.05rem;
   font-weight: bold;
-  color: #00c6ff;
+  color: white;
   background: none;
   border: none;
   text-align: left;
@@ -633,7 +646,7 @@ h1, h2 {
 
 .mari-comment {
   margin-top: 0.3rem;
-  font-style: italic;
+  font-style: bold;
   font-size: 0.85rem;
   color: #ccf3ff;
   padding-left: 0.5rem;

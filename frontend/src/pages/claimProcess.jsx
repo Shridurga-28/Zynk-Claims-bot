@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import '../App.css';
 
-const API_BASE = "http://localhost:8000"; // Or your backend URL
+const API_BASE = "/api"; //"http://localhost:8000"; // Or your backend URL
 
 const FAQs = [
   { q: "How long does a claim take?", a: "It typically takes 3–5 working days after verification." },
@@ -79,7 +79,7 @@ setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
       setMessages([...messages, { sender: "user", text: chat }]);
       setChat('');
       setTimeout(() => {
-        setMessages(prev => [...prev, { sender: "bot", text: "🤖 I am processing your request..." }]);
+        setMessages(prev => [...prev, { sender: "bot", text: "I am processing your request..." }]);
       }, 1000);
     }
   };
@@ -87,7 +87,7 @@ setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
   return (
     <div className="app-wrapper">
       <header className="header">
-        <h1>🤖 EasyClaim - Smart Insurance Assistance</h1>
+        <h1>Zynk - Smart Claims Assistance</h1>
       </header>
 
       <div className="main-layout">
@@ -104,7 +104,7 @@ setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
 
         <main className="main-content">
           <section className="chat-section">
-            <h2>🤖 Ask EasyClaim Bot</h2>
+            <h2>Ask Zynk Bot</h2>
             <div className="chat-box">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`msg ${msg.sender}`}>{msg.text}</div>
@@ -133,7 +133,7 @@ setMessages(prev => [...prev, { sender: "bot", text: data.reply }]);
               <textarea placeholder="Describe your issue..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required />
               <input type="file" onChange={handleFileChange} />
               {imagePreview && <img src={imagePreview} alt="Preview" className="image-preview" />}
-              <p className="ocr-placeholder">🧠 OCR will parse this image after upload...</p>
+              <p className="ocr-placeholder">OCR will parse this image after upload...</p>
               <button type="submit">Submit</button>
               {success && <p className="success">✅ Claim submitted!</p>}
             </form>

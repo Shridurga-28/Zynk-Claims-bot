@@ -5,10 +5,11 @@ import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
-from fastapi import FastAPI, UploadFile, File, Query, HTTPException
+from fastapi import FastAPI, UploadFile, File, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from fastapi.concurrency import run_in_threadpool
 
 # Google Cloud Vision + Vertex AI (Gemini)
 from google.cloud import vision
@@ -34,7 +35,7 @@ if not PROJECT_ID:
 
 # Vertex AI (Gemini)
 init(project=PROJECT_ID, location=REGION)
-model = GenerativeModel("gemini-2.5-pro")
+model = GenerativeModel("gemini-2.0-flash") #("gemini-2.5-pro")
 
 # Firebase Admin (use service account if provided, else ADC)
 if not firebase_admin._apps:
@@ -173,7 +174,7 @@ def normalize_fields(d: Dict[str, Any]) -> Dict[str, Any]:
 
     return out
 
-def llm_extract_fields(text: str) -> Dict[str, Any]:
+async def llm_extract_fields(text: str) -> Dict[str, Any]:
     """Ask Gemini to return structured JSON for claim fields."""
     prompt = f"""
 You are an insurance claims assistant. Extract and normalize details from this invoice text and respond ONLY in JSON:
@@ -189,7 +190,8 @@ Required keys:
 Text:
 {text}
 """
-    resp = model.generate_content(prompt)
+    #resp = model.generate_content(prompt)
+    resp = await run_in_threadpool(model.generate_content, prompt)
     parsed = safe_extract_json(resp.text)
     return parsed
 
@@ -212,7 +214,7 @@ def store_claim(user_id: str, claim_data: dict):
     db.collection("claims").add({"user_id": user_id, **clean})
 
 def retrieve_claims(user_id: str) -> List[Dict[str, Any]]:
-    docs = db.collection("claims").where("user_id", "==", user_id).order_by("timestamp").stream()
+    docs = db.collection("claims").where("user_id", "==", user_id).order_by("timestamp").limit(20).stream()
     return [doc.to_dict() | {"id": doc.id} for doc in docs]
 
 def summarize_claims(claims: list) -> str:
@@ -359,6 +361,20 @@ def verify_claim(q: VerifyInput):
 
     matches_list = [c for c in candidates if matches(c)]
     return {"count": len(matches_list), "matches": matches_list}
+
+@app.post("/inya_webhook")
+async def inya_webhook(request: Request):
+    data = await request.json()
+    print("Incoming event from Inya:", data)
+    
+    # Example: send back chatbot reply
+    return {
+        "reply": "This is my chatbot's voice-enabled response!"
+    }
+
+@app.get("/config")
+def get_config():
+    return {"agent_id": os.getenv("AGENT_ID")}
 
 if __name__ == "__main__":
     import uvicorn
