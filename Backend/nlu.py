@@ -27,7 +27,7 @@ load_dotenv()
 
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = os.getenv("REGION", "us-central1")
-SA_PATH = "/run/secrets/service_account.json" #os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "service_account.json")
+SA_PATH = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "/run/secrets/service_account.json") #os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "service_account.json")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 if not PROJECT_ID:
