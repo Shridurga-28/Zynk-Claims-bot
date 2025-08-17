@@ -80,7 +80,7 @@ init(project=PROJECT_ID, location=REGION)
 model = GenerativeModel("gemini-2.0-flash")
 
 # Firebase Admin using secret file
-sa_path = "/run/secrets/service_account.json"
+sa_path = "/etc/secrets/service_account.json"
 
 if not firebase_admin._apps:
     cred = credentials.Certificate(sa_path)
