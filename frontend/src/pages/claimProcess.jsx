@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import '../App.css';
 
-const API_BASE = "/api"; //"http://localhost:8000"; // Or your backend URL
+const API_BASE = "https://zynk-claims-bot-backend.onrender.com"; //"http://localhost:8000"; // Or your backend URL
 
 const FAQs = [
   { q: "How long does a claim take?", a: "It typically takes 3–5 working days after verification." },

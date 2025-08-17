@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import '../App.css';
 
-const API_BASE = "/api"; //"http://localhost:8000"; // Or your backend URL
+const API_BASE = "https://zynk-claims-bot-backend.onrender.com"; //"http://localhost:8000"; // Or your backend URL
 
 const ClaimFormPage = () => {
   const [messages, setMessages] = useState([]);

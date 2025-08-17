@@ -115,7 +115,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import '../App.css';
 
-const API_BASE = "/api"; //"http://localhost:8000"; // Or your backend URL
+const API_BASE = "https://zynk-claims-bot-backend.onrender.com"; //"/api"; //"http://localhost:8000"; // Or your backend URL
 
 const ChatBotPage = () => {
   const [chat, setChat] = useState('');
